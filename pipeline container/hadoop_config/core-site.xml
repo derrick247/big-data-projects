@@ -1,0 +1,18 @@
+<configuration>
+  <property>
+    <name>fs.defaultFS</name>
+    <value>hdfs://namenode:9000</value>
+    <description>
+      The default file system URI.
+    </description>
+  </property>
+
+  <property>
+    <name>hadoop.tmp.dir</name>
+    <value>/tmp/hadoop-tmp</value>
+    <description>
+      A base for other temporary directories.
+    </description>
+  </property>
+
+</configuration>

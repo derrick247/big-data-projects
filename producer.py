@@ -2,6 +2,7 @@ from kafka import KafkaProducer
 import requests
 import json
 import time
+from my_functions import get_measurements
 
 # Remplace par TA NOUVELLE CLÉ API
 API_KEY = "cbe86366906b474013ca66d5156808b4bd3fec4e4f5a96c2da8025efba72ca80"
@@ -12,32 +13,24 @@ producer = KafkaProducer(
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
+MEASUREMENTS_URL = "https://api.openaq.org/v3/sensors"
+
 # URL pour récupérer les dernières mesures
-API_URL = "https://api.openaq.org/v3/sensors/3917/measurements"
+LOCATIONS_URL = "https://api.openaq.org/v3/locations?countries_id=22&&limit=20" # toutes les localisations en france
 
 # Ajouter l'API Key dans les headers
 HEADERS = {
     "X-API-Key": API_KEY
 }
 
-while True:
-    try:
-        response = requests.get(API_URL, headers=HEADERS)  
-        if response.status_code == 200:
-            data = response.json()  
-            print(f"📤 Réponse API brute : {json.dumps(data, indent=2)}")  
+SENSOR_ID = [5561, 15370, 5566, 5567, 5569, 5568, 5572, 5574, 5573, 4275113, 5578, 5579, 5656, 5580, 5581, 5582, 4275139, 5609, 5622, 5583, 5614]
+OTHER_SENSOR_FOR_FRANCE = [5584, 4274933, 5585, 5590, 5595, 4275255, 8537, 8536, 8535, 8534, 5586, 7586, 4274338, 5587, 5603, 4274492, 5620, 5588, 5589, 5593, 5597, 5591, 5621, 4275074, 5624, 5592, 5617, 24880, 5626, 5594, 4275409, 5601, 5599, 5596, 5602, 5600, 5598]
 
-            if 'results' in data:
-                for record in data['results']:
-                    producer.send("pollution", record)  
-                    print(f"📤 Envoyé à Kafka : {record}")
-            else:
-                print("⚠️ Aucune donnée trouvée dans la réponse.")
-
-        else:
-            print(f"❌ Erreur API : {response.status_code} - {response.text}")
-
-    except Exception as e:
-        print(f"🚨 Erreur de connexion : {e}")
-
-    time.sleep(10)
+for id in SENSOR_ID:
+    print("Measurement of sensors ", id)
+    measurements = get_measurements(id, MEASUREMENTS_URL, HEADERS)
+    
+    print("Send Measurements to kafka ...")
+    producer.send("pollution", measurements)
+    
+    time.sleep(1)

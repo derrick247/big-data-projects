@@ -2,10 +2,14 @@ from kafka import KafkaConsumer
 import json
 import os
 import subprocess
+from hdfs import InsecureClient
+
+# Connexion a HDFS
+client = InsecureClient('http://localhost:9870', user='root')
 
 # Vérifier si le fichier existe sur la machine locale
-if not os.path.exists("pollution_data.txt"):
-    open("pollution_data.txt", "w").close()
+if not os.path.exists("pollution.json"):
+    open("pollution.json", "w").close()
 
 # Connexion au topic "pollution"
 consumer = KafkaConsumer(
@@ -18,35 +22,22 @@ consumer = KafkaConsumer(
 
 print("📥 En attente des données Kafka...")
 
+measurements = []
 for message in consumer:
-    data = message.value  # Récupérer les données envoyées par Kafka
-    print("📥 Données reçues depuis Kafka :", data)  # Debug
+    measurements.append(message.value)  # Récupérer les données envoyées par Kafka
+    
+    # Écrire dans le fichier local
+    with open("pollution.json", "w", encoding="utf-8") as file:
+        json.dump(measurements, file, indent=4, ensure_ascii=False)
 
-    # Vérifier si la clé 'parameter' existe dans le message
-    if "parameter" in data and "value" in data and "period" in data:
-        formatted_data = f"""
-        🔬 Paramètre: {data['parameter']['name']}
-        📊 Unité: {data['value']} {data['parameter']['units']}
-        📅 Première mesure: {data['period']['datetimeFrom']['local']}
-        📅 Dernière mesure: {data['period']['datetimeTo']['local']}
-        """
+    try:
+        client.delete("/data/pollution.json")
+        print(f"📂 Fichier supprimé avec succès.")
+        
+        hdfs_path = '/data/pollution.json'  # Chemin HDFS de destination
+        local_path = 'pollution_data.json'  # Chemin local du fichier
+        client.upload(hdfs_path, local_path)
+        print(f"🚀 Fichier uploadé avec succès.")
 
-        print(formatted_data)
-
-        # Écrire dans le fichier local
-        with open("pollution_data.txt", "a", encoding="utf-8") as file:
-            file.write(formatted_data + "\n")
-            file.flush()
-
-        # Copie dans Docker puis envoi dans HDFS
-        if os.path.exists("pollution_data.txt"):
-            print("📂 Copie du fichier dans Docker...")
-            subprocess.run(["docker", "cp", "pollution_data.txt", "hadoop-master:/tmp/pollution_data.txt"])
-
-            print("🚀 Envoi du fichier dans HDFS...")
-            subprocess.run([
-                "docker", "exec", "-it", "hadoop-master",
-                "hdfs", "dfs", "-appendToFile", "/tmp/pollution_data.txt", "/data/pollution_data.txt"
-            ])
-    else:
-        print("⚠️ Données non exploitables reçues :", data)
+    except Exception as e:
+        print(f"Erreur lors de l'upload du fichier : {e}")
