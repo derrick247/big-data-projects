@@ -26,13 +26,9 @@ services:
       - "9870:9870"
       - "9000:9000"
     command: ["/bin/bash", "/start-hdfs.sh"]
-    # command: >
-    #   /bin/bash -c "
-    #     /start-hdfs.sh
-    #   "
-    networks:
-      hdfs_network:
-        ipv4_address: 172.20.0.2
+    # networks:
+    #   hdfs_network:
+    #     ipv4_address: 172.20.0.2
 
   datanode1:
     image: apache/hadoop:3.3.5
@@ -50,26 +46,44 @@ services:
     command: ["/bin/bash", "/init-datanode.sh"]
     ports:
       - 9864:9864
-    networks:
-      hdfs_network:
-        ipv4_address: 172.20.0.3
+    # networks:
+    #   hdfs_network:
+    #     ipv4_address: 172.20.0.3
 
-  datanode2:
-    image: apache/hadoop:3.3.5
-    container_name: datanode2
-    hostname: datanode2
-    user: root
-    environment:
-      - HADOOP_HOME=/opt/hadoop
-    volumes:
-      - ./hadoop_datanode2:/opt/hadoop/data/dataNode
-      - ./hadoop_config:/opt/hadoop/etc/hadoop
-      - ./init-datanode.sh:/init-datanode.sh
-    depends_on:
-      - namenode
-    command: ["/bin/bash", "/init-datanode.sh"]
-    ports:
-      - 9865:9864
-    networks:
-      hdfs_network:
-        ipv4_address: 172.20.0.4
+  # datanode2:
+  #   image: apache/hadoop:3.3.5
+  #   container_name: datanode2
+  #   hostname: datanode2
+  #   user: root
+  #   environment:
+  #     - HADOOP_HOME=/opt/hadoop
+  #   volumes:
+  #     - ./hadoop_datanode2:/opt/hadoop/data/dataNode
+  #     - ./hadoop_config:/opt/hadoop/etc/hadoop
+  #     - ./init-datanode.sh:/init-datanode.sh
+  #   depends_on:
+  #     - namenode
+  #   command: ["/bin/bash", "/init-datanode.sh"]
+  #   ports:
+  #     - 9865:9864
+  # networks:
+  #   hdfs_network:
+  #     ipv4_address: 172.20.0.4
+
+  # kafka-producer:
+  #   build: ./producer/.
+  #   container_name: kafka-producer
+  #   depends_on:
+  #     - kafka
+  #   environment:
+  #     KAFKA_BROKER: kafka:9092
+  #   restart: always
+
+  # kafka-consumer:
+  #   build: ../consumer/.
+  #   container_name: kafka-consumer
+  #   depends_on:
+  #     - kafka
+  #   environment:
+  #     KAFKA_BROKER: kafka:9092
+  #   restart: always
