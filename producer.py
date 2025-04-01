@@ -25,6 +25,7 @@ while True:
         response = requests.get(API_URL, headers=HEADERS)  
         if response.status_code == 200:
             data = response.json()  
+            print("----------------------------------------------------------")
             print(f"📤 Réponse API brute : {json.dumps(data, indent=2)}")  
 
             if 'results' in data:
@@ -33,6 +34,8 @@ while True:
                     print(f"📤 Envoyé à Kafka : {record}")
             else:
                 print("⚠️ Aucune donnée trouvée dans la réponse.")
+                
+            print("----------------------------------------------------------")
 
         else:
             print(f"❌ Erreur API : {response.status_code} - {response.text}")

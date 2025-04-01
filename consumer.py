@@ -2,25 +2,30 @@ from kafka import KafkaConsumer
 import json
 import os
 import subprocess
+import time  # Pour générer un group_id unique
 
 # Vérifier si le fichier existe sur la machine locale
 if not os.path.exists("pollution_data.txt"):
     open("pollution_data.txt", "w").close()
 
+# Générer un `group_id` unique pour chaque exécution
+unique_group_id = f"pollution-group-{int(time.time())}"
+
 # Connexion au topic "pollution"
 consumer = KafkaConsumer(
     "pollution",
     bootstrap_servers="localhost:9092",
-    auto_offset_reset="earliest",
-    group_id="pollution-group",
+    auto_offset_reset="latest",  # Lire SEULEMENT les nouveaux messages
+    group_id=unique_group_id,  # Nouveau group_id unique à chaque exécution
+    enable_auto_commit=True,  # Sauvegarde automatique de la position de lecture
     value_deserializer=lambda x: json.loads(x.decode("utf-8"))
 )
 
-print("📥 En attente des données Kafka...")
+print(f"📥 En attente des nouvelles données Kafka... (Group ID: {unique_group_id})")
 
 for message in consumer:
     data = message.value  # Récupérer les données envoyées par Kafka
-    print("📥 Données reçues depuis Kafka :", data)  # Debug
+    print("📥 Nouvelle donnée reçue :", data)
 
     # Vérifier si la clé 'parameter' existe dans le message
     if "parameter" in data and "value" in data and "period" in data:
