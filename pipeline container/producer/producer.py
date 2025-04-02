@@ -30,7 +30,8 @@ for id in SENSOR_ID:
     print("Measurement of sensors ", id)
     measurements = get_measurements(id, MEASUREMENTS_URL, HEADERS)
     
-    print("Send Measurements to kafka ...")
-    producer.send("pollution", measurements)
+    for measurement in measurements:
+        print("Send Measurements to kafka ...")
+        producer.send("pollution", measurement)
     
     time.sleep(1)

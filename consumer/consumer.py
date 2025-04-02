@@ -35,7 +35,7 @@ for message in consumer:
         print(f"📂 Fichier supprimé avec succès.")
         
         hdfs_path = '/data/pollution.json'  # Chemin HDFS de destination
-        local_path = 'pollution_data.json'  # Chemin local du fichier
+        local_path = 'pollution.json'  # Chemin local du fichier
         client.upload(hdfs_path, local_path)
         print(f"🚀 Fichier uploadé avec succès.")
 
