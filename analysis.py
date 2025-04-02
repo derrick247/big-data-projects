@@ -2,46 +2,53 @@
 from pyspark.sql import SparkSession
 from pyspark.ml.clustering import KMeans
 from pyspark.ml.feature import VectorAssembler
-from pyspark.sql.functions import col
+from pyspark.sql.functions import col, unix_timestamp, to_timestamp, expr
+from hdfs import InsecureClient
+import json 
 
-# Initialiser une session Spark
 spark = SparkSession.builder.appName("KMeansAnalysis").getOrCreate()
+# client = InsecureClient('http://localhost:9870', user='root')
 
-# Charger les données depuis le fichier JSON
-data = spark.read.json("pollution.json")
+# with client.read('/data/pollution.json', encoding='utf-8') as reader:
+#     json_data = json.load(reader)
 
-# Sélectionner les colonnes pertinentes pour l'analyse k-means
-# Ici, nous allons utiliser 'value' et les informations de 'period' (datetimeFrom et datetimeTo)
-# Vous pouvez ajuster les colonnes sélectionnées en fonction de votre analyse
-selected_data = data.select(
+# df = spark.read.json(spark.sparkContext.parallelize([json.dumps(json_data)]))
+# df = spark.read.option("multiline", "true").json("hdfs://localhost:9870/data/pollution.json")
+# df.printSchema()
+# df.show(truncate=False)
+
+# df = spark.read.option("multiline", "true").json(json_data)
+# df.printSchema()
+# df.show(truncate=False)
+
+df = spark.read.option("multiline", "true").json("D:\\big-data-projects\\pollution.json")
+
+df= df.drop("coordinates", "summary")
+
+df.select("period.datetimeFrom.utc", "period.datetimeTo.utc").show(truncate=False)
+
+df = df.withColumn("datetimeFrom", to_timestamp(col("period.datetimeFrom.utc")))
+df = df.withColumn("datetimeTo", to_timestamp(col("period.datetimeTo.utc")))
+
+df = df.withColumn("duration_seconds", expr("timestampdiff(SECOND, datetimeFrom, datetimeTo)"))
+# df.select("datetimeFrom", "datetimeTo", "duration_seconds").show()
+
+df_selected = df.select(
     col("value"),
-    col("period.datetimeFrom.utc").alias("datetimeFrom_utc"),
-    col("period.datetimeTo.utc").alias("datetimeTo_utc")
+    col("parameter.id").alias("parameter_id"),
+    col("coverage.percentComplete").alias("percentComplete"),
+    col("coverage.percentCoverage").alias("percentCoverage"),
+    col("duration_seconds")
 )
 
-# Remplacer les valeurs nulles par 0 pour éviter les erreurs
-selected_data = selected_data.na.fill(0)
-
-# Assembler les caractéristiques en un seul vecteur
 assembler = VectorAssembler(
-    inputCols=["value", "datetimeFrom_utc", "datetimeTo_utc"],
+    inputCols=["value", "parameter_id", "percentComplete", "percentCoverage", "duration_seconds"],
     outputCol="features"
 )
-final_data = assembler.transform(selected_data)
+df_features = assembler.transform(df_selected).select("features")
 
-# Initialiser l'algorithme k-means
-# Vous pouvez ajuster le nombre de clusters (k) en fonction de votre analyse
-kmeans = KMeans(k=3, featuresCol="features", predictionCol="cluster")
+kmeans = KMeans(k=3, seed=1, featuresCol="features", predictionCol="cluster")
+model = kmeans.fit(df_features)
+df_clusters = model.transform(df_features)
 
-# Entraîner le modèle k-means
-model = kmeans.fit(final_data)
-
-# Obtenir les résultats du clustering
-predictions = model.transform(final_data)
-
-# Afficher les résultats
-print("Résultats du clustering:")
-predictions.select("value", "datetimeFrom_utc", "datetimeTo_utc", "cluster").show()
-
-# Arrêter la session Spark
-spark.stop()
+df_clusters.show()
