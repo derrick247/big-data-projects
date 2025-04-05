@@ -81,7 +81,7 @@ services:
     setup:
         image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
         volumes:
-            - certs:/usr/share/elasticsearch/config/certs
+            - ./elastic/certs:/usr/share/elasticsearch/config/certs
         user: "0"
         command: >
             bash -c '
@@ -145,8 +145,8 @@ services:
                 condition: service_healthy
         image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
         volumes:
-            - certs:/usr/share/elasticsearch/config/certs
-            - esdata01:/usr/share/elasticsearch/data
+            - ./elastic/certs:/usr/share/elasticsearch/config/certs
+            - ./elastic/esdata01:/usr/share/elasticsearch/data
         ports:
             - ${ES_PORT}:9200
         environment:
@@ -188,8 +188,8 @@ services:
             - es01
         image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
         volumes:
-            - certs:/usr/share/elasticsearch/config/certs
-            - esdata02:/usr/share/elasticsearch/data
+            - ./elastic/certs:/usr/share/elasticsearch/config/certs
+            - ./elastic/esdata02:/usr/share/elasticsearch/data
         environment:
             - node.name=es02
             - cluster.name=${CLUSTER_NAME}
@@ -229,8 +229,8 @@ services:
             - es02
         image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
         volumes:
-            - certs:/usr/share/elasticsearch/config/certs
-            - esdata03:/usr/share/elasticsearch/data
+            - ./elastic/certs:/usr/share/elasticsearch/config/certs
+            - ./elastic/esdata03:/usr/share/elasticsearch/data
         environment:
             - node.name=es03
             - cluster.name=${CLUSTER_NAME}
@@ -275,8 +275,8 @@ services:
                 condition: service_healthy
         image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
         volumes:
-            - certs:/usr/share/kibana/config/certs
-            - kibanadata:/usr/share/kibana/data
+            - ./elastic/certs:/usr/share/kibana/config/certs
+            - ./elastic/kibanadata:/usr/share/kibana/data
         ports:
             - ${KIBANA_PORT}:5601
         environment:
@@ -297,21 +297,21 @@ services:
             retries: 120
 
     logstash:
-        # depends_on:
-        #     es01:
-        #         condition: service_healthy
-        #     kibana:
-        #         condition: service_healthy
+        depends_on:
+            es01:
+                condition: service_healthy
+            kibana:
+                condition: service_healthy
         image: docker.elastic.co/logstash/logstash:${STACK_VERSION}
         labels:
             co.elastic.logs/module: logstash
         user: root
         volumes:
-            - logstashdata01:/usr/share/logstash/data
-            - certs:/usr/share/logstash/certs
-            - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
-            - ./logstash.yml:/usr/share/logstash/config/logstash.yml
-            - ../pollution_formatted.json:/usr/share/logstash/pollution.json:ro
+            - ./elastic/logstashdata01:/usr/share/logstash/data
+            - ./elastic/certs:/usr/share/logstash/certs
+            - ./elastic/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+            - ./elastic/logstash.yml:/usr/share/logstash/config/logstash.yml
+            - ./pollution_formatted.json:/usr/share/logstash/pollution.json:ro
         environment:
             - NODE_NAME="logstash"
             - xpack.monitoring.enabled=false
