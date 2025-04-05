@@ -9,7 +9,7 @@ API_KEY = "cbe86366906b474013ca66d5156808b4bd3fec4e4f5a96c2da8025efba72ca80"
 
 # Connexion à Kafka
 producer = KafkaProducer(
-    bootstrap_servers='localhost:9092',  
+    bootstrap_servers='kafka:9092',  
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 

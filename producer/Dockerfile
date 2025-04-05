@@ -1,4 +1,4 @@
-FROM python:latest-slim
+FROM python:3.13.2
 
 # Définir le répertoire de travail dans le conteneur
 WORKDIR /app

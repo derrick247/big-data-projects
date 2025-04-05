@@ -5,7 +5,7 @@ import subprocess
 from hdfs import InsecureClient
 
 # Connexion a HDFS
-client = InsecureClient('http://localhost:9870', user='root')
+client = InsecureClient('http://hadoop-namenode:9870', user='root')
 
 # Vérifier si le fichier existe sur la machine locale
 if not os.path.exists("pollution.json"):
@@ -14,9 +14,8 @@ if not os.path.exists("pollution.json"):
 # Connexion au topic "pollution"
 consumer = KafkaConsumer(
     "pollution",
-    bootstrap_servers="localhost:9092",
+    bootstrap_servers="kafka:9092",
     auto_offset_reset="earliest",
-    group_id="pollution-group",
     value_deserializer=lambda x: json.loads(x.decode("utf-8"))
 )
 
